@@ -94,3 +94,42 @@ Clone the Repository:
 Bash
 
 git clone https://olympus.ntu.ac.uk/[your-private-repo-link]
+
+Environment Setup: Ensure you are using the mandatory module Docker image: pedrombmachado/ntu_lubuntu:comp20081.
+
+Build the Project: Open the project in NetBeans and build using Maven to generate the executable .jar file.
+
+
+Launch Infrastructure: In the terminal, navigate to the project root and run:
+
+Bash
+
+docker-compose up --build
+Usage
+Upon launching the JavaFX portal, users can:
+
+
+Login/Authenticate: Access standard or admin dashboards.
+
+
+Manage Files: Upload, download, share, and delete files with specific read/write permissions.
+
+
+
+Terminal Interface: Use the built-in shell to navigate the simulated directory structure.
+
+
+Monitor Performance: View performance metrics and logs for the load balancer and file servers.
+
+Academic Integrity
+This project was developed strictly adhering to the NTU COMP20081 coursework specifications. All code is original, and the use of Generative AI has been limited to authorized spelling and grammar checks as per the "Traffic Light System" (Green) .
+
+
+Author
+Student Name: [Your Name]
+
+
+Module: COMP20081 - Systems Software 
+
+
+Institution: Nottingham Trent University
