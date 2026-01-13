@@ -28,3 +28,30 @@ Terminal Emulation: Integrated shell allowing users to execute standard commands
 
 Real-world Latency Simulation: Introduces artificial delays of 30 to 90 seconds to emulate actual cloud response times.
 
+System Architecture
+The system consists of several orchestrated Docker containers:
+
+
+
+Main Container: Hosts the JavaFX GUI and local SQLite database.
+
+
+
+Load Balancer: Manages traffic distribution and resource scaling.
+
+
+
+File Partitioning & Aggregator: Handles file chunking, AES encryption/decryption, and CRC32 validation.
+
+
+
+MySQL Database: Centralized storage for user profiles and system logs.
+
+
+
+File Storage Containers: Two or more containers dedicated to storing encrypted file chunks.
+
+
+
+
+Host Manager: A support container for managing the Docker environment
