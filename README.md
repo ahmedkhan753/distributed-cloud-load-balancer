@@ -55,3 +55,24 @@ File Storage Containers: Two or more containers dedicated to storing encrypted f
 
 
 Host Manager: A support container for managing the Docker environment
+
+Technical Stack
+
+Language: Java (JDK 20+).
+
+
+Build Tool: Maven.
+
+
+
+UI Framework: JavaFX with Scene Builder.
+
+
+Containerization: Docker & Docker Compose.
+
+
+
+Database: SQLite (Local) and MySQL (Remote).
+
+
+Communication Protocols: MQTT, OpenSSH, and TCP .
