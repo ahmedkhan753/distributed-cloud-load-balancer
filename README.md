@@ -76,3 +76,21 @@ Database: SQLite (Local) and MySQL (Remote).
 
 
 Communication Protocols: MQTT, OpenSSH, and TCP .
+
+Getting Started
+Prerequisites
+
+NetBeans IDE (Mandatory for compilation).
+
+
+Docker Desktop and Docker Compose.
+
+
+Java 20 or higher.
+
+Installation & Setup
+Clone the Repository:
+
+Bash
+
+git clone https://olympus.ntu.ac.uk/[your-private-repo-link]
