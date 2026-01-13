@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # 1. Main Master Node (Your JavaFX Portal lives here)
+  master-node:
+    image: pedrombmachado/ntu_lubuntu:comp20081
+    container_name: master_node
+    ports:
+      - "3389:3389" # RDP port to access the GUI
+    volumes:
+      - ../src:/home/lubuntu/project/src # Link your Java code
+    networks:
+      - cloud-net
+
+  # 2. Remote MySQL Database (Global user/ACL storage)
+  mysql-db:
+    image: mysql:8.0
+    container_name: mysql_db
+    platform: linux/amd64
+    environment:
+      MYSQL_ROOT_PASSWORD: admin_password
+      MYSQL_DATABASE: cloud_system
+    ports:
+      - "3307:3306"
+    networks:
+      - cloud-net
+
+  # 3. File Partitioning Service (Encryption & Chunking)
+  partitioner:
+    image: pedrombmachado/ntu_lubuntu:comp20081
+    container_name: partitioner_service
+    depends_on:
+      - master-node
+    networks:
+      - cloud-net
+
+  # 4. Storage Server 1
+  storage-node-1:
+    image: pedrombmachado/ntu_lubuntu:comp20081
+    container_name: storage_1
+    networks:
+      - cloud-net
+
+  # 5. Storage Server 2
+  storage-node-2:
+    image: pedrombmachado/ntu_lubuntu:comp20081
+    container_name: storage_2
+    networks:
+      - cloud-net
+
+  # 6. Host Manager (Monitoring)
+  host-manager:
+    image: pedrombmachado/ntu_lubuntu:comp20081
+    container_name: host_manager
+    networks:
+      - cloud-net
+
+networks:
+  cloud-net:
+    driver: bridge
