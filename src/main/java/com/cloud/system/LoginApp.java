@@ -36,7 +36,9 @@ public class LoginApp extends Application {
             if (userDAO.validateLogin(user, pass)) {
                 statusLabel.setStyle("-fx-text-fill: green;");
                 statusLabel.setText("Login Successful! Welcome " + user);
-                // Later we will open the Dashboard here
+
+                Dashboard dashboard = new Dashboard();
+                dashboard.show(primaryStage, user);
             } else {
                 statusLabel.setStyle("-fx-text-fill: red;");
                 statusLabel.setText("Invalid Credentials");
