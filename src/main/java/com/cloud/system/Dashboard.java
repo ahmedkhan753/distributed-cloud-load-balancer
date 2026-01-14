@@ -11,7 +11,7 @@ import javafx.stage.Stage;
 import java.io.File;
 
 public class Dashboard {
-
+    private FileService fileService = new FileService();
     public void show(Stage stage, String username) {
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(20));
@@ -48,8 +48,11 @@ public class Dashboard {
             FileChooser fileChooser = new FileChooser();
             File selectedFile = fileChooser.showOpenDialog(stage);
             if (selectedFile != null) {
-                System.out.println("Selected file: " + selectedFile.getAbsolutePath());
-                // This is where we will trigger our Load Balancer logic!
+                fileService.uploadFile(selectedFile, username);
+
+                // Show a quick alert
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "File Uploaded to Cloud!");
+                alert.show();
             }
         });
 
