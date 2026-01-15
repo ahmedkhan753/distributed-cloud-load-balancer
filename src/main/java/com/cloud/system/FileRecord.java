@@ -1,24 +1,19 @@
 package com.cloud.system;
 
-public class FileRecord {
-    private int id;
-    private String fileName;
-    private String fileSize;
-    private String uploadDate;
-    private String storageNode; // Server 1 or Server 2
+import javafx.beans.property.SimpleStringProperty;
 
-    public FileRecord(int id, String fileName, String fileSize, String uploadDate, String storageNode) {
-        this.id = id;
-        this.fileName = fileName;
-        this.fileSize = fileSize;
-        this.uploadDate = uploadDate;
-        this.storageNode = storageNode;
+public class FileRecord {
+    private final SimpleStringProperty fileName;
+    private final SimpleStringProperty fileSize;
+    private final SimpleStringProperty storageNode;
+
+    public FileRecord(String fileName, String fileSize, String storageNode) {
+        this.fileName = new SimpleStringProperty(fileName);
+        this.fileSize = new SimpleStringProperty(fileSize);
+        this.storageNode = new SimpleStringProperty(storageNode);
     }
 
-    // Getters (Required for JavaFX TableView to work)
-    public int getId() { return id; }
-    public String getFileName() { return fileName; }
-    public String getFileSize() { return fileSize; }
-    public String getUploadDate() { return uploadDate; }
-    public String getStorageNode() { return storageNode; }
+    public String getFileName() { return fileName.get(); }
+    public String getFileSize() { return fileSize.get(); }
+    public String getStorageNode() { return storageNode.get(); }
 }

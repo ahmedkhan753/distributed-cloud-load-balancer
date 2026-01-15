@@ -18,7 +18,7 @@ public class FileService {
         // 3. Start SFTP Transfer in a background thread
         // This prevents the UI from "freezing" during the upload
         new Thread(() -> {
-            System.out.println("🚀 Starting SFTP transfer for: " + file.getName());
+            System.out.println("🚀 Starting SFTP transfer for: " + file.getName() + " to localhost:" + port);
             SftpUploader.upload("localhost", port, "storage_user", "storage_pass", file);
         }).start();
 
