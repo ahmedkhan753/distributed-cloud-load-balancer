@@ -11,13 +11,24 @@ public class FileService {
         // 1. Get the next server from Load Balancer
         String targetNode = loadBalancer.getNextNode();
 
-        // 2. Format file size for the UI
+        // 2. Determine the SFTP Port based on the target node
+        // In our docker-compose: storage_1 = 2221, storage_2 = 2222
+        int port = targetNode.equals("storage_1") ? 2221 : 2222;
+
+        // 3. Start SFTP Transfer in a background thread
+        // This prevents the UI from "freezing" during the upload
+        new Thread(() -> {
+            System.out.println("🚀 Starting SFTP transfer for: " + file.getName());
+            SftpUploader.upload("localhost", port, "storage_user", "storage_pass", file);
+        }).start();
+
+        // 4. Format file size for the UI
         String fileSize = (file.length() / 1024) + " KB";
 
-        // 3. Save the "Metadata" to our MySQL database
+        // 5. Save the "Metadata" to our MySQL database
         saveMetadataToDb(file.getName(), fileSize, targetNode, username);
 
-        System.out.println("✅ " + file.getName() + " assigned to " + targetNode);
+        System.out.println("✅ Metadata saved: " + file.getName() + " assigned to " + targetNode);
     }
 
     private void saveMetadataToDb(String name, String size, String node, String user) {

@@ -38,6 +38,8 @@ services:
   storage-node-1:
     image: pedrombmachado/ntu_lubuntu:comp20081
     container_name: storage_1
+    ports:
+      - "2221:22"
     networks:
       - cloud-net
 
@@ -45,6 +47,8 @@ services:
   storage-node-2:
     image: pedrombmachado/ntu_lubuntu:comp20081
     container_name: storage_2
+    ports:
+      - "2222:22"
     networks:
       - cloud-net
 
