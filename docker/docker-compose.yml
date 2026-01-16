@@ -16,6 +16,8 @@ services:
   mysql-db:
     image: mysql:8.0
     container_name: mysql_db
+    volumes:
+      - ./mysql_data:/var/lib/mysql
     platform: linux/amd64
     environment:
       MYSQL_ROOT_PASSWORD: admin_password
@@ -38,6 +40,10 @@ services:
   storage-node-1:
     image: pedrombmachado/ntu_lubuntu:comp20081
     container_name: storage_1
+    volumes:
+      - ./storage1_uploads:/home/storage_user/uploads
+      - .:/mnt/project # Mount your current folder to /mnt/project in Linux
+    entrypoint: ["/bin/bash", "/mnt/project/setup_storage.sh"]
     ports:
       - "2221:22"
     networks:
@@ -47,6 +53,10 @@ services:
   storage-node-2:
     image: pedrombmachado/ntu_lubuntu:comp20081
     container_name: storage_2
+    volumes:
+      - ./storage2_uploads:/home/storage_user/uploads
+      - .:/mnt/project # Mount your current folder to /mnt/project in Linux
+    entrypoint: ["/bin/bash", "/mnt/project/setup_storage.sh"]
     ports:
       - "2222:22"
     networks:
