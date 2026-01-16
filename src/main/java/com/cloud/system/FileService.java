@@ -5,7 +5,9 @@ import java.io.*;
 import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.Arrays;
+import java.util.Random;
 
 public class FileService {
     private LoadBalancer loadBalancer = new LoadBalancer();
@@ -13,30 +15,39 @@ public class FileService {
     public void uploadFile(File file, String username) {
         new Thread(() -> {
             try {
-                // 1. Read file and prepare for chunking (Req 20)
+                // Requirement 10: Artificial Delay Simulation (30 to 90 seconds)
+                int delay = new Random().nextInt(61) + 30;
+                System.out.println("⏳ Simulating cloud latency: " + delay + " seconds...");
+                Thread.sleep(delay * 1000);
+
+                // 1. Read and Chunk (Req 20)
                 byte[] fileBytes = Files.readAllBytes(file.toPath());
                 String fileSizeLabel = (fileBytes.length / 1024) + " KB";
                 int mid = fileBytes.length / 2;
 
-                // Split into two parts
-                byte[] part1 = Arrays.copyOfRange(fileBytes, 0, mid);
-                byte[] part2 = Arrays.copyOfRange(fileBytes, mid, fileBytes.length);
+                byte[] p1 = Arrays.copyOfRange(fileBytes, 0, mid);
+                byte[] p2 = Arrays.copyOfRange(fileBytes, mid, fileBytes.length);
 
                 // 2. AES Encryption (Req 6)
-                byte[] encrypted1 = EncryptionService.encrypt(part1);
-                byte[] encrypted2 = EncryptionService.encrypt(part2);
+                byte[] enc1 = EncryptionService.encrypt(p1);
+                byte[] enc2 = EncryptionService.encrypt(p2);
 
-                // 3. Distributed Upload (Req 7)
-                // Upload physical chunks to nodes
-                uploadChunkToSftp("localhost", 2221, file.getName() + ".part1", encrypted1);
-                uploadChunkToSftp("localhost", 2222, file.getName() + ".part2", encrypted2);
+                // 3. Dynamic Load Balancing (Req 7)
+                String node1 = loadBalancer.getNextNode();
+                String node2 = loadBalancer.getNextNode();
 
-                // 4. Save metadata ONCE for the whole file (Req 13)
-                // We record that this file has 2 chunks distributed across the system
-                saveFileMetadata(file.getName(), fileSizeLabel, username, 2);
+                int port1 = node1.equals("storage_1") ? 2221 : 2222;
+                int port2 = node2.equals("storage_1") ? 2221 : 2222;
+
+                // 4. Physical Upload
+                uploadChunkToSftp("localhost", port1, file.getName() + ".part1", enc1);
+                uploadChunkToSftp("localhost", port2, file.getName() + ".part2", enc2);
+
+                // 5. Save Stateful Metadata (Req 13)
+                saveDistributedMetadata(file.getName(), fileSizeLabel, username, node1, node2);
 
                 javafx.application.Platform.runLater(() -> {
-                    new Alert(Alert.AlertType.INFORMATION, "File distributed successfully!").show();
+                    new Alert(Alert.AlertType.INFORMATION, "Upload Successful!\nDistributed to: " + node1 + " & " + node2).show();
                 });
 
             } catch (Exception e) {
@@ -46,65 +57,79 @@ public class FileService {
         }).start();
     }
 
-    private void uploadChunkToSftp(String host, int port, String chunkName, byte[] data) throws Exception {
-        com.jcraft.jsch.JSch jsch = new com.jcraft.jsch.JSch();
-        com.jcraft.jsch.Session session = jsch.getSession("storage_user", host, port);
-        session.setPassword("storage_pass");
-        session.setConfig("StrictHostKeyChecking", "no");
-        session.connect();
-
-        com.jcraft.jsch.ChannelSftp sftp = (com.jcraft.jsch.ChannelSftp) session.openChannel("sftp");
-        sftp.connect();
-
-        try (InputStream is = new ByteArrayInputStream(data)) {
-            sftp.put(is, "/home/storage_user/uploads/" + chunkName);
-        }
-
-        sftp.disconnect();
-        session.disconnect();
-    }
-
-    private void saveFileMetadata(String name, String size, String user, int totalChunks) {
-        // Updated SQL: We store the main file record.
-        // Note: storage_node column now represents the 'Cluster' or primary node
-        String sql = "INSERT INTO file_metadata (file_name, file_size, storage_node, user_id, total_chunks) " +
-                "VALUES (?, ?, 'Distributed', (SELECT id FROM users WHERE username = ?), ?)";
-
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, name);
-            pstmt.setString(2, size);
-            pstmt.setString(3, user);
-            pstmt.setInt(4, totalChunks);
-            pstmt.executeUpdate();
-        } catch (Exception e) { e.printStackTrace(); }
-    }
-
     public void downloadAndReassemble(String fileName, File destination) {
         new Thread(() -> {
             try {
-                // 1. Fetch encrypted chunks from nodes
-                byte[] enc1 = fetchChunkFromServer("localhost", 2221, fileName + ".part1");
-                byte[] enc2 = fetchChunkFromServer("localhost", 2222, fileName + ".part2");
+                // 1. Fetch metadata to find WHERE the chunks are
+                String[] nodes = getChunkLocations(fileName);
+                if (nodes == null) throw new Exception("Metadata not found");
 
-                // 2. Decrypt chunks (Req 6)
+                int port1 = nodes[0].equals("storage_1") ? 2221 : 2222;
+                int port2 = nodes[1].equals("storage_1") ? 2221 : 2222;
+
+                // 2. Fetch from the specific ports chosen by Load Balancer
+                byte[] enc1 = fetchChunkFromServer("localhost", port1, fileName + ".part1");
+                byte[] enc2 = fetchChunkFromServer("localhost", port2, fileName + ".part2");
+
+                // 3. Decrypt and Merge
                 byte[] part1 = EncryptionService.decrypt(enc1);
                 byte[] part2 = EncryptionService.decrypt(enc2);
 
-                // 3. Reassemble (Req 20)
                 try (FileOutputStream fos = new FileOutputStream(destination)) {
                     fos.write(part1);
                     fos.write(part2);
                 }
 
                 javafx.application.Platform.runLater(() -> {
-                    new Alert(Alert.AlertType.INFORMATION, "File reassembled successfully!").show();
+                    new Alert(Alert.AlertType.INFORMATION, "File reassembled and decrypted!").show();
                 });
             } catch (Exception e) {
                 e.printStackTrace();
-                showError("Download Failed: Check if both storage nodes are online.");
+                showError("Download Failed: " + e.getMessage());
             }
         }).start();
+    }
+
+    private String[] getChunkLocations(String fileName) {
+        String sql = "SELECT node_part1, node_part2 FROM file_metadata WHERE file_name = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, fileName);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return new String[]{rs.getString("node_part1"), rs.getString("node_part2")};
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return null;
+    }
+
+    private void saveDistributedMetadata(String name, String size, String user, String n1, String n2) {
+        String sql = "INSERT INTO file_metadata (file_name, file_size, storage_node, user_id, total_chunks, node_part1, node_part2) " +
+                "VALUES (?, ?, 'Distributed', (SELECT id FROM users WHERE username = ?), 2, ?, ?)";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, name);
+            pstmt.setString(2, size);
+            pstmt.setString(3, user);
+            pstmt.setString(4, n1);
+            pstmt.setString(5, n2);
+            pstmt.executeUpdate();
+        } catch (Exception e) { e.printStackTrace(); }
+    }
+
+    private void uploadChunkToSftp(String host, int port, String chunkName, byte[] data) throws Exception {
+        com.jcraft.jsch.JSch jsch = new com.jcraft.jsch.JSch();
+        com.jcraft.jsch.Session session = jsch.getSession("storage_user", host, port);
+        session.setPassword("storage_pass");
+        session.setConfig("StrictHostKeyChecking", "no");
+        session.connect();
+        com.jcraft.jsch.ChannelSftp sftp = (com.jcraft.jsch.ChannelSftp) session.openChannel("sftp");
+        sftp.connect();
+        try (InputStream is = new ByteArrayInputStream(data)) {
+            sftp.put(is, "/home/storage_user/uploads/" + chunkName);
+        }
+        sftp.disconnect();
+        session.disconnect();
     }
 
     private byte[] fetchChunkFromServer(String host, int port, String chunkName) throws Exception {
@@ -113,15 +138,12 @@ public class FileService {
         session.setPassword("storage_pass");
         session.setConfig("StrictHostKeyChecking", "no");
         session.connect();
-
         com.jcraft.jsch.ChannelSftp sftp = (com.jcraft.jsch.ChannelSftp) session.openChannel("sftp");
         sftp.connect();
-
         byte[] data;
         try (InputStream is = sftp.get("/home/storage_user/uploads/" + chunkName)) {
             data = is.readAllBytes();
         }
-
         sftp.disconnect();
         session.disconnect();
         return data;
@@ -130,17 +152,16 @@ public class FileService {
     public void deleteDistributedFile(String fileName) {
         new Thread(() -> {
             try {
-                // Delete from both servers
-                deletePhysicalChunk("localhost", 2221, fileName + ".part1");
-                deletePhysicalChunk("localhost", 2222, fileName + ".part2");
-
-                // Delete single metadata record
+                String[] nodes = getChunkLocations(fileName);
+                if (nodes != null) {
+                    deletePhysicalChunk("localhost", nodes[0].equals("storage_1") ? 2221 : 2222, fileName + ".part1");
+                    deletePhysicalChunk("localhost", nodes[1].equals("storage_1") ? 2221 : 2222, fileName + ".part2");
+                }
                 try (Connection conn = DatabaseConnection.getConnection();
                      PreparedStatement pstmt = conn.prepareStatement("DELETE FROM file_metadata WHERE file_name = ?")) {
                     pstmt.setString(1, fileName);
                     pstmt.executeUpdate();
                 }
-
                 javafx.application.Platform.runLater(() -> {
                     new Alert(Alert.AlertType.INFORMATION, "File deleted from all nodes.").show();
                 });
