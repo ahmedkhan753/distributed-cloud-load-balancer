@@ -27,12 +27,12 @@ public class Dashboard {
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(20));
 
-        // 1. Top Section: Welcome Message
-        Label welcomeLabel = new Label("Welcome, " + username + " | Cloud Dashboard");
+        // 1. Top Section
+        Label welcomeLabel = new Label("Welcome, " + username + " | Distributed Cloud Dashboard");
         welcomeLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
         root.setTop(welcomeLabel);
 
-        // 2. Center Section: File Table Configuration
+        // 2. Table Configuration
         TableColumn<FileRecord, String> nameCol = new TableColumn<>("File Name");
         nameCol.setCellValueFactory(new PropertyValueFactory<>("fileName"));
         nameCol.setMinWidth(250);
@@ -41,87 +41,83 @@ public class Dashboard {
         sizeCol.setCellValueFactory(new PropertyValueFactory<>("fileSize"));
         sizeCol.setMinWidth(100);
 
-        TableColumn<FileRecord, String> nodeCol = new TableColumn<>("Storage Node");
+        TableColumn<FileRecord, String> nodeCol = new TableColumn<>("Storage Mode");
         nodeCol.setCellValueFactory(new PropertyValueFactory<>("storageNode"));
         nodeCol.setMinWidth(150);
 
         table.getColumns().addAll(nameCol, sizeCol, nodeCol);
-        table.setItems(fileData); // Bind the table to our list
+        table.setItems(fileData);
         root.setCenter(table);
 
-        // 3. Bottom Section: Action Buttons
+        // 3. Action Buttons
         Button uploadBtn = new Button("Upload New File");
         Button refreshBtn = new Button("Refresh List");
-        HBox controls = new HBox(10, uploadBtn, refreshBtn);
+        Button downloadBtn = new Button("Download Selected");
+        Button deleteBtn = new Button("Delete Selected");
+
+        deleteBtn.setStyle("-fx-background-color: #ff4444; -fx-text-fill: white;");
+
+        HBox controls = new HBox(10, uploadBtn, downloadBtn, deleteBtn, refreshBtn);
         controls.setPadding(new Insets(10, 0, 0, 0));
         root.setBottom(controls);
 
-        // 4. Button Actions
+        // --- BUTTON LOGIC ---
+
+        // UPLOAD (Now splits and encrypts)
         uploadBtn.setOnAction(e -> {
             FileChooser fileChooser = new FileChooser();
             File selectedFile = fileChooser.showOpenDialog(stage);
             if (selectedFile != null) {
                 fileService.uploadFile(selectedFile, username);
-                Alert alert = new Alert(Alert.AlertType.INFORMATION, "File Uploading... Click Refresh in a few seconds.");
-                alert.show();
+                // Auto-refresh after a small delay to allow SFTP and SQL to finish
+                PauseTransition pause = new PauseTransition(Duration.seconds(2));
+                pause.setOnFinished(ev -> refreshTableData());
+                pause.play();
             }
         });
 
-        // Link Refresh button to our data fetching method
-        refreshBtn.setOnAction(e -> refreshTableData());
-
-        // Initial load: fetch data when dashboard opens
-        refreshTableData();
-
-        Scene scene = new Scene(root, 600, 400);
-        stage.setTitle("Cloud System Dashboard");
-        stage.setScene(scene);
-        stage.show();
-
-        // 1. Create the Download Button
-        Button downloadBtn = new Button("Download Selected");
-        controls.getChildren().add(downloadBtn); // Add it to your HBox
-
-// 2. Add the logic
+        // DOWNLOAD (Now reassembles and decrypts)
         downloadBtn.setOnAction(e -> {
             FileRecord selectedFile = table.getSelectionModel().getSelectedItem();
-
             if (selectedFile != null) {
                 FileChooser fileSaver = new FileChooser();
                 fileSaver.setInitialFileName(selectedFile.getFileName());
                 File destination = fileSaver.showSaveDialog(stage);
 
                 if (destination != null) {
-                    fileService.downloadFile(
-                            selectedFile.getFileName(),
-                            selectedFile.getStorageNode(),
-                            destination
-                    );
+                    // FIXED: Using the new reassemble method
+                    fileService.downloadAndReassemble(selectedFile.getFileName(), destination);
                 }
             } else {
-                Alert alert = new Alert(Alert.AlertType.WARNING, "Please select a file from the table first!");
-                alert.show();
+                new Alert(Alert.AlertType.WARNING, "Please select a file first!").show();
             }
         });
-        Button deleteBtn = new Button("Delete Selected");
-        deleteBtn.setStyle("-fx-background-color: #ff4444; -fx-text-fill: white;");
-        controls.getChildren().add(deleteBtn);
 
+        // DELETE (Now cleans up both storage nodes)
         deleteBtn.setOnAction(e -> {
             FileRecord selected = table.getSelectionModel().getSelectedItem();
             if (selected != null) {
-                fileService.deleteFile(selected.getFileName(), selected.getStorageNode());
-                // Auto-refresh the table after a short delay
+                // FIXED: Using the new distributed delete method
+                fileService.deleteDistributedFile(selected.getFileName());
+
                 PauseTransition pause = new PauseTransition(Duration.seconds(1));
                 pause.setOnFinished(ev -> refreshTableData());
                 pause.play();
             }
         });
+
+        refreshBtn.setOnAction(e -> refreshTableData());
+        refreshTableData();
+
+        Scene scene = new Scene(root, 700, 450);
+        stage.setTitle("Cloud System Dashboard");
+        stage.setScene(scene);
+        stage.show();
     }
 
-    // This method connects to MySQL and fetches the metadata
     private void refreshTableData() {
-        fileData.clear(); // Clear existing rows
+        fileData.clear();
+        // Updated Query: Selecting from the metadata table updated for distributed storage
         String sql = "SELECT file_name, file_size, storage_node FROM file_metadata";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -135,10 +131,7 @@ public class Dashboard {
                         rs.getString("storage_node")
                 ));
             }
-            System.out.println("🔄 Dashboard table refreshed from Database.");
-
         } catch (Exception e) {
-            System.err.println("❌ Failed to fetch table data");
             e.printStackTrace();
         }
     }
