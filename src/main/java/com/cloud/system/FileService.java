@@ -48,4 +48,45 @@ public class FileService {
             e.printStackTrace();
         }
     }
+    public void downloadFile(String fileName, String storageNode, File destination) {
+        new Thread(() -> {
+            String host = "localhost";
+            int port = storageNode.equals("storage_1") ? 2221 : 2222;
+            String user = "storage_user";
+            String password = "storage_pass";
+            String remoteFilePath = "/home/storage_user/uploads/" + fileName;
+
+            com.jcraft.jsch.JSch jsch = new com.jcraft.jsch.JSch();
+            com.jcraft.jsch.Session session = null;
+            try {
+                session = jsch.getSession(user, host, port);
+                session.setPassword(password);
+                session.setConfig("StrictHostKeyChecking", "no");
+                session.connect();
+
+                com.jcraft.jsch.ChannelSftp sftp = (com.jcraft.jsch.ChannelSftp) session.openChannel("sftp");
+                sftp.connect();
+
+                // Download from Linux to Windows
+                sftp.get(remoteFilePath, destination.getAbsolutePath());
+
+                sftp.disconnect();
+                System.out.println("✅ Download successful: " + destination.getAbsolutePath());
+
+                javafx.application.Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "File downloaded successfully!");
+                    alert.show();
+                });
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                javafx.application.Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "Download failed: " + e.getMessage());
+                    alert.show();
+                });
+            } finally {
+                if (session != null) session.disconnect();
+            }
+        }).start();
+    }
 }
