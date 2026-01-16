@@ -75,6 +75,32 @@ public class Dashboard {
         stage.setTitle("Cloud System Dashboard");
         stage.setScene(scene);
         stage.show();
+
+        // 1. Create the Download Button
+        Button downloadBtn = new Button("Download Selected");
+        controls.getChildren().add(downloadBtn); // Add it to your HBox
+
+// 2. Add the logic
+        downloadBtn.setOnAction(e -> {
+            FileRecord selectedFile = table.getSelectionModel().getSelectedItem();
+
+            if (selectedFile != null) {
+                FileChooser fileSaver = new FileChooser();
+                fileSaver.setInitialFileName(selectedFile.getFileName());
+                File destination = fileSaver.showSaveDialog(stage);
+
+                if (destination != null) {
+                    fileService.downloadFile(
+                            selectedFile.getFileName(),
+                            selectedFile.getStorageNode(),
+                            destination
+                    );
+                }
+            } else {
+                Alert alert = new Alert(Alert.AlertType.WARNING, "Please select a file from the table first!");
+                alert.show();
+            }
+        });
     }
 
     // This method connects to MySQL and fetches the metadata
