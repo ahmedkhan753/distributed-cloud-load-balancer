@@ -91,4 +91,39 @@ public class FileService {
             }
         }).start();
     }
+    public void deleteFile(String fileName, String storageNode) {
+        new Thread(() -> {
+            int port = storageNode.equals("storage_1") ? 2221 : 2222;
+
+            // Step 1: Physical Delete via SFTP
+            try {
+                com.jcraft.jsch.JSch jsch = new com.jcraft.jsch.JSch();
+                com.jcraft.jsch.Session session = jsch.getSession("storage_user", "localhost", port);
+                session.setPassword("storage_pass");
+                session.setConfig("StrictHostKeyChecking", "no");
+                session.connect();
+
+                com.jcraft.jsch.ChannelSftp sftp = (com.jcraft.jsch.ChannelSftp) session.openChannel("sftp");
+                sftp.connect();
+                sftp.rm("/home/storage_user/uploads/" + fileName);
+                sftp.disconnect();
+                session.disconnect();
+
+                // Step 2: Logical Delete via MySQL
+                try (Connection conn = DatabaseConnection.getConnection();
+                     PreparedStatement pstmt = conn.prepareStatement("DELETE FROM file_metadata WHERE file_name = ?")) {
+                    pstmt.setString(1, fileName);
+                    pstmt.executeUpdate();
+                }
+
+                javafx.application.Platform.runLater(() -> {
+                    Alert alert = new Alert(Alert.AlertType.INFORMATION, "File deleted from Cloud!");
+                    alert.show();
+                });
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
 }

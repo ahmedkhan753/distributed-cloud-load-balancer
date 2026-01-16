@@ -1,5 +1,6 @@
 package com.cloud.system;
 
+import javafx.animation.PauseTransition;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -10,6 +11,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.io.File;
 import java.sql.Connection;
@@ -99,6 +101,20 @@ public class Dashboard {
             } else {
                 Alert alert = new Alert(Alert.AlertType.WARNING, "Please select a file from the table first!");
                 alert.show();
+            }
+        });
+        Button deleteBtn = new Button("Delete Selected");
+        deleteBtn.setStyle("-fx-background-color: #ff4444; -fx-text-fill: white;");
+        controls.getChildren().add(deleteBtn);
+
+        deleteBtn.setOnAction(e -> {
+            FileRecord selected = table.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                fileService.deleteFile(selected.getFileName(), selected.getStorageNode());
+                // Auto-refresh the table after a short delay
+                PauseTransition pause = new PauseTransition(Duration.seconds(1));
+                pause.setOnFinished(ev -> refreshTableData());
+                pause.play();
             }
         });
     }
