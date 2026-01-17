@@ -173,14 +173,37 @@ public class FileService {
         session.setPassword("storage_pass");
         session.setConfig("StrictHostKeyChecking", "no");
         session.connect();
+
         com.jcraft.jsch.ChannelSftp sftp = (com.jcraft.jsch.ChannelSftp) session.openChannel("sftp");
         sftp.connect();
-        byte[] data;
-        try (InputStream is = sftp.get("/home/storage_user/uploads/" + chunkName)) {
-            data = is.readAllBytes();
+
+        byte[] data = null;
+        // We try two different paths because SFTP configurations vary
+        String[] possiblePaths = {
+                "uploads/" + chunkName,               // Relative path (Used during our upload)
+                "/home/storage_user/uploads/" + chunkName // Absolute path
+        };
+
+        Exception lastError = null;
+        for (String path : possiblePaths) {
+            try {
+                System.out.println("🔍 Searching for chunk at: " + host + ":" + port + " -> " + path);
+                try (InputStream is = sftp.get(path)) {
+                    data = is.readAllBytes();
+                    System.out.println("✅ Found and downloaded: " + path);
+                    break; // If successful, exit the loop
+                }
+            } catch (Exception e) {
+                lastError = e; // Keep track of the error and try the next path
+            }
         }
+
         sftp.disconnect();
         session.disconnect();
+
+        if (data == null) {
+            throw new Exception("File not found on server after trying all paths. Last error: " + lastError.getMessage());
+        }
         return data;
     }
 
