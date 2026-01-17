@@ -36,8 +36,9 @@ public class FileService {
                 String node1 = loadBalancer.getNextNode();
                 String node2 = loadBalancer.getNextNode();
 
-                int port1 = node1.equals("storage_1") ? 2221 : 2222;
-                int port2 = node2.equals("storage_1") ? 2221 : 2222;
+                int port1 = getPortForNode(node1);
+                int port2 = getPortForNode(node2);
+
 
                 // 4. Physical Upload
                 uploadChunkToSftp("localhost", port1, file.getName() + ".part1", enc1);
@@ -55,6 +56,15 @@ public class FileService {
                 showError("Upload Failed: " + e.getMessage());
             }
         }).start();
+    }
+    private int getPortForNode(String nodeName){
+        switch (nodeName) {
+            case "storage_1": return 2221;
+            case "storage_2": return 2222;
+            case "storage_3": return 2223;
+            case "storage_4": return 2224;
+            default: return 2221;
+        }
     }
 
     public void downloadAndReassemble(String fileName, File destination) {
