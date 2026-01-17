@@ -75,8 +75,8 @@ services:
     ports:
       - "2224:22"
     volumes:
-      - ./storage4_uploads:/home/storage_user/uploads::rw
-    command: storage_user:storage_pass:1001
+      - ./storage4_uploads:/home/storage_user/uploads:rw
+    command: storage_user:storage_pass:1001::uploads
 
   # 6. Host Manager (Monitoring)
   host-manager:

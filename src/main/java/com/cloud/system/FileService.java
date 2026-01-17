@@ -138,16 +138,14 @@ public class FileService {
         com.jcraft.jsch.ChannelSftp sftp = (com.jcraft.jsch.ChannelSftp) session.openChannel("sftp");
         sftp.connect();
 
-        // Fix for "No such file" error: Ensure directory exists
-        try {
-            sftp.cd("/home/storage_user/uploads");
-        } catch (Exception e) {
-            sftp.mkdir("/home/storage_user/uploads");
-            sftp.cd("/home/storage_user/uploads");
-        }
+        String remotePath = "uploads/" + chunkName;
 
         try (InputStream is = new ByteArrayInputStream(data)) {
-            sftp.put(is, chunkName);
+            sftp.put(is, remotePath);
+            System.out.println("✅ Chunk " + chunkName + " uploaded to port " + port);
+        } catch (Exception e) {
+            System.err.println("❌ SFTP Put Failed on port " + port + ": " + e.getMessage());
+            throw e;
         }
 
         sftp.disconnect();
