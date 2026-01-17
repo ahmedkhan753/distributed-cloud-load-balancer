@@ -67,15 +67,15 @@ services:
     ports:
       - "2223:22"
     volumes:
-      - ./storage3_uploads:/home/storage_user/uploads
-    command: storage_user:storage_pass:1001
+      - ./storage3_uploads:/home/storage_user/uploads:rw
+    command: storage_user:storage_pass:1001::uploads
 
   storage_4:
     image: atmoz/sftp
     ports:
       - "2224:22"
     volumes:
-      - ./storage4_uploads:/home/storage_user/uploads
+      - ./storage4_uploads:/home/storage_user/uploads::rw
     command: storage_user:storage_pass:1001
 
   # 6. Host Manager (Monitoring)

@@ -58,6 +58,7 @@ public class FileService {
         }).start();
     }
     private int getPortForNode(String nodeName){
+        if (nodeName == null ) return 2221;
         switch (nodeName) {
             case "storage_1": return 2221;
             case "storage_2": return 2222;
@@ -133,11 +134,22 @@ public class FileService {
         session.setPassword("storage_pass");
         session.setConfig("StrictHostKeyChecking", "no");
         session.connect();
+
         com.jcraft.jsch.ChannelSftp sftp = (com.jcraft.jsch.ChannelSftp) session.openChannel("sftp");
         sftp.connect();
-        try (InputStream is = new ByteArrayInputStream(data)) {
-            sftp.put(is, "/home/storage_user/uploads/" + chunkName);
+
+        // Fix for "No such file" error: Ensure directory exists
+        try {
+            sftp.cd("/home/storage_user/uploads");
+        } catch (Exception e) {
+            sftp.mkdir("/home/storage_user/uploads");
+            sftp.cd("/home/storage_user/uploads");
         }
+
+        try (InputStream is = new ByteArrayInputStream(data)) {
+            sftp.put(is, chunkName);
+        }
+
         sftp.disconnect();
         session.disconnect();
     }
@@ -163,17 +175,24 @@ public class FileService {
         new Thread(() -> {
             try {
                 String[] nodes = getChunkLocations(fileName);
-                if (nodes != null) {
-                    deletePhysicalChunk("localhost", nodes[0].equals("storage_1") ? 2221 : 2222, fileName + ".part1");
-                    deletePhysicalChunk("localhost", nodes[1].equals("storage_1") ? 2221 : 2222, fileName + ".part2");
+
+                // Check if metadata exists and nodes are not null
+                if (nodes != null && nodes[0] != null && nodes[1] != null) {
+                    deletePhysicalChunk("localhost", getPortForNode(nodes[0]), fileName + ".part1");
+                    deletePhysicalChunk("localhost", getPortForNode(nodes[1]), fileName + ".part2");
+                } else {
+                    System.out.println("⚠️ Skipping physical delete: No node location metadata found for " + fileName);
                 }
+
+                // Always delete the database record
                 try (Connection conn = DatabaseConnection.getConnection();
                      PreparedStatement pstmt = conn.prepareStatement("DELETE FROM file_metadata WHERE file_name = ?")) {
                     pstmt.setString(1, fileName);
                     pstmt.executeUpdate();
                 }
+
                 javafx.application.Platform.runLater(() -> {
-                    new Alert(Alert.AlertType.INFORMATION, "File deleted from all nodes.").show();
+                    new Alert(Alert.AlertType.INFORMATION, "File record removed from system.").show();
                 });
             } catch (Exception e) { e.printStackTrace(); }
         }).start();
