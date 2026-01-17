@@ -62,29 +62,21 @@ services:
     networks:
       - cloud-net
 
-  storage-node-3:
-    image: pedrombmachado/ntu_lubuntu:comp20081
-    container_name: storage_3
-    volumes:
-      - ./storage2_uploads:/home/storage_user/uploads
-      - .:/mnt/project # Mount your current folder to /mnt/project in Linux
-    entrypoint: [ "/bin/bash", "/mnt/project/setup_storage.sh" ]
+  storage_3:
+    image: atmoz/sftp
     ports:
       - "2223:22"
-    networks:
-      - cloud-net
+    volumes:
+      - ./storage3_uploads:/home/storage_user/uploads
+    command: storage_user:storage_pass:1001
 
-    storage-node-4:
-      image: pedrombmachado/ntu_lubuntu:comp20081
-      container_name: storage_4
-      volumes:
-        - ./storage2_uploads:/home/storage_user/uploads
-        - .:/mnt/project # Mount your current folder to /mnt/project in Linux
-      entrypoint: [ "/bin/bash", "/mnt/project/setup_storage.sh" ]
-      ports:
-        - "2224:22"
-      networks:
-        - cloud-net
+  storage_4:
+    image: atmoz/sftp
+    ports:
+      - "2224:22"
+    volumes:
+      - ./storage4_uploads:/home/storage_user/uploads
+    command: storage_user:storage_pass:1001
 
   # 6. Host Manager (Monitoring)
   host-manager:
