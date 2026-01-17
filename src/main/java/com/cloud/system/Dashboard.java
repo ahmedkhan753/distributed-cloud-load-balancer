@@ -9,6 +9,7 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -113,6 +114,39 @@ public class Dashboard {
         stage.setTitle("Cloud System Dashboard");
         stage.setScene(scene);
         stage.show();
+
+        // Inside Dashboard.java show() method:
+
+        TabPane tabPane = new TabPane();
+        Tab dashboardTab = new Tab("File Manager", root.getCenter());
+        dashboardTab.setClosable(false);
+
+// Create the Terminal Tab
+        VBox terminalBox = new VBox(10);
+        terminalBox.setPadding(new Insets(10));
+        TextArea terminalOutput = new TextArea("Welcome to CloudShell v1.0\nType 'help' for commands...\n\n$ ");
+        terminalOutput.setEditable(false);
+        terminalOutput.setStyle("-fx-control-inner-background: black; -fx-text-fill: lime; -fx-font-family: 'Courier New';");
+        terminalOutput.setPrefHeight(300);
+
+        TextField terminalInput = new TextField();
+        terminalInput.setPromptText("Enter command...");
+
+        terminalBox.getChildren().addAll(terminalOutput, terminalInput);
+        Tab terminalTab = new Tab("Cloud Terminal", terminalBox);
+        terminalTab.setClosable(false);
+
+        tabPane.getTabs().addAll(dashboardTab, terminalTab);
+        root.setCenter(tabPane);
+
+// Logic to handle terminal commands
+        TerminalService terminalService = new TerminalService(username);
+        terminalInput.setOnAction(e -> {
+            String cmd = terminalInput.getText();
+            String result = terminalService.execute(cmd);
+            terminalOutput.appendText(cmd + "\n" + result + "\n$ ");
+            terminalInput.clear();
+        });
     }
 
     private void refreshTableData() {
