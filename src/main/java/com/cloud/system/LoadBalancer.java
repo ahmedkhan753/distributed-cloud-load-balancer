@@ -12,6 +12,8 @@ public class LoadBalancer {
         // These names must match your service names in docker-compose.yml
         storageNodes.add("storage_1");
         storageNodes.add("storage_2");
+        storageNodes.add("storage_3");
+        storageNodes.add("storage_4");
     }
 
     // The Round Robin Algorithm
