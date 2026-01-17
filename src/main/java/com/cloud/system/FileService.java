@@ -32,12 +32,16 @@ public class FileService {
                 byte[] enc1 = EncryptionService.encrypt(p1);
                 byte[] enc2 = EncryptionService.encrypt(p2);
 
-                // 3. Dynamic Load Balancing (Req 7)
-                String node1 = loadBalancer.getNextNode();
-                String node2 = loadBalancer.getNextNode();
+                String targetNode1 = loadBalancer.getNextHealthyNode();
+                String targetNode2 = loadBalancer.getNextHealthyNode();
 
-                int port1 = getPortForNode(node1);
-                int port2 = getPortForNode(node2);
+                if (targetNode1 == null || targetNode2 == null) {
+                    showError("Critical Error: Not enough healthy storage nodes available!");
+                    return;
+                }
+
+                int port1 = getPortForNode(targetNode1);
+                int port2 = getPortForNode(targetNode2);
 
 
                 // 4. Physical Upload
@@ -45,10 +49,10 @@ public class FileService {
                 uploadChunkToSftp("localhost", port2, file.getName() + ".part2", enc2);
 
                 // 5. Save Stateful Metadata (Req 13)
-                saveDistributedMetadata(file.getName(), fileSizeLabel, username, node1, node2);
+                saveDistributedMetadata(file.getName(), fileSizeLabel, username, targetNode1, targetNode2);
 
                 javafx.application.Platform.runLater(() -> {
-                    new Alert(Alert.AlertType.INFORMATION, "Upload Successful!\nDistributed to: " + node1 + " & " + node2).show();
+                    new Alert(Alert.AlertType.INFORMATION, "Upload Successful!\nDistributed to: " + targetNode1 + " & " + targetNode2).show();
                 });
 
             } catch (Exception e) {
@@ -71,18 +75,28 @@ public class FileService {
     public void downloadAndReassemble(String fileName, File destination) {
         new Thread(() -> {
             try {
-                // 1. Fetch metadata to find WHERE the chunks are
-                String[] nodes = getChunkLocations(fileName);
-                if (nodes == null) throw new Exception("Metadata not found");
+                // 1. Ask the Database: "Where did the Load Balancer put these chunks?"
+                String[] locations = getChunkLocations(fileName);
 
-                int port1 = nodes[0].equals("storage_1") ? 2221 : 2222;
-                int port2 = nodes[1].equals("storage_1") ? 2221 : 2222;
+                if (locations == null || locations[0] == null || locations[1] == null) {
+                    showError("Error: Could not find location metadata for this file.");
+                    return;
+                }
 
-                // 2. Fetch from the specific ports chosen by Load Balancer
+                String node1 = locations[0];
+                String node2 = locations[1];
+
+                // 2. Map those names to the correct ports
+                int port1 = getPortForNode(node1);
+                int port2 = getPortForNode(node2);
+
+                System.out.println("📥 Downloading from healthy nodes: " + node1 + " (Port " + port1 + ") and " + node2 + " (Port " + port2 + ")");
+
+                // 3. Fetch from those SPECIFIC ports
                 byte[] enc1 = fetchChunkFromServer("localhost", port1, fileName + ".part1");
                 byte[] enc2 = fetchChunkFromServer("localhost", port2, fileName + ".part2");
 
-                // 3. Decrypt and Merge
+                // 4. Decrypt and Reassemble
                 byte[] part1 = EncryptionService.decrypt(enc1);
                 byte[] part2 = EncryptionService.decrypt(enc2);
 
@@ -92,8 +106,9 @@ public class FileService {
                 }
 
                 javafx.application.Platform.runLater(() -> {
-                    new Alert(Alert.AlertType.INFORMATION, "File reassembled and decrypted!").show();
+                    new Alert(Alert.AlertType.INFORMATION, "File reassembled from " + node1 + " and " + node2).show();
                 });
+
             } catch (Exception e) {
                 e.printStackTrace();
                 showError("Download Failed: " + e.getMessage());
