@@ -26,6 +26,7 @@ public class LoginApp extends Application {
         passField.setMaxWidth(200);
 
         Button loginButton = new Button("Login");
+        loginButton.setStyle("-fx-background-color: #0078d7; -fx-text-fill: white;");
         Label statusLabel = new Label("");
 
         // 2. Handle Button Click

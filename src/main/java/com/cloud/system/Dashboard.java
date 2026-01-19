@@ -52,8 +52,12 @@ public class Dashboard {
 
         // 3. Action Buttons
         Button uploadBtn = new Button("Upload New File");
-        Button refreshBtn = new Button("Refresh List");
+        uploadBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
+
         Button downloadBtn = new Button("Download Selected");
+        downloadBtn.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white;");
+
+        Button refreshBtn = new Button("Refresh List");
         Button deleteBtn = new Button("Delete Selected");
 
         deleteBtn.setStyle("-fx-background-color: #ff4444; -fx-text-fill: white;");
@@ -121,12 +125,13 @@ public class Dashboard {
         Tab dashboardTab = new Tab("File Manager", root.getCenter());
         dashboardTab.setClosable(false);
 
-// Create the Terminal Tab
+        // Create the Terminal Tab
         VBox terminalBox = new VBox(10);
         terminalBox.setPadding(new Insets(10));
         TextArea terminalOutput = new TextArea("Welcome to CloudShell v1.0\nType 'help' for commands...\n\n$ ");
         terminalOutput.setEditable(false);
-        terminalOutput.setStyle("-fx-control-inner-background: black; -fx-text-fill: lime; -fx-font-family: 'Courier New';");
+        terminalOutput
+                .setStyle("-fx-control-inner-background: black; -fx-text-fill: lime; -fx-font-family: 'Courier New';");
         terminalOutput.setPrefHeight(300);
 
         TextField terminalInput = new TextField();
@@ -139,7 +144,7 @@ public class Dashboard {
         tabPane.getTabs().addAll(dashboardTab, terminalTab);
         root.setCenter(tabPane);
 
-// Logic to handle terminal commands
+        // Logic to handle terminal commands
         TerminalService terminalService = new TerminalService(username);
         terminalInput.setOnAction(e -> {
             String cmd = terminalInput.getText();
@@ -151,19 +156,19 @@ public class Dashboard {
 
     private void refreshTableData() {
         fileData.clear();
-        // Updated Query: Selecting from the metadata table updated for distributed storage
+        // Updated Query: Selecting from the metadata table updated for distributed
+        // storage
         String sql = "SELECT file_name, file_size, storage_node FROM file_metadata";
 
         try (Connection conn = DatabaseConnection.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
                 fileData.add(new FileRecord(
                         rs.getString("file_name"),
                         rs.getString("file_size"),
-                        rs.getString("storage_node")
-                ));
+                        rs.getString("storage_node")));
             }
         } catch (Exception e) {
             e.printStackTrace();
