@@ -14,12 +14,12 @@ public class LoginApp extends Application {
     @Override
     public void start(Stage primaryStage) {
         // 1. Create UI Controls
-        Label titleLabel = new Label("Cloud System Login");
-        titleLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold;");
+        Label titleLabel = new Label("Secure Cloud Login");
+        titleLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #333;");
 
         TextField userField = new TextField();
         userField.setPromptText("Username");
-        userField.setMaxWidth(200);
+        userField.setMaxWidth(220);
 
         PasswordField passField = new PasswordField();
         passField.setPromptText("Password");
@@ -47,7 +47,7 @@ public class LoginApp extends Application {
         });
 
         // 3. Layout (Vertical Box)
-        VBox layout = new VBox(15); // 15px spacing
+        VBox layout = new VBox(20); // 20px spacing
         layout.setAlignment(Pos.CENTER);
         layout.getChildren().addAll(titleLabel, userField, passField, loginButton, statusLabel);
 

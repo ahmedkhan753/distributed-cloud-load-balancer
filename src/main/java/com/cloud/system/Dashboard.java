@@ -26,7 +26,7 @@ public class Dashboard {
 
     public void show(Stage stage, String username) {
         BorderPane root = new BorderPane();
-        root.setPadding(new Insets(20));
+        root.setPadding(new Insets(25));
 
         // 1. Top Section
         Label welcomeLabel = new Label("Welcome, " + username + " | Distributed Cloud Dashboard");
@@ -36,7 +36,7 @@ public class Dashboard {
         // 2. Table Configuration
         TableColumn<FileRecord, String> nameCol = new TableColumn<>("File Name");
         nameCol.setCellValueFactory(new PropertyValueFactory<>("fileName"));
-        nameCol.setMinWidth(250);
+        nameCol.setMinWidth(260);
 
         TableColumn<FileRecord, String> sizeCol = new TableColumn<>("Size");
         sizeCol.setCellValueFactory(new PropertyValueFactory<>("fileSize"));
@@ -52,12 +52,15 @@ public class Dashboard {
 
         // 3. Action Buttons
         Button uploadBtn = new Button("Upload New File");
+        uploadBtn.setTooltip(new Tooltip("Click to select and upload a file"));
         uploadBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
 
         Button downloadBtn = new Button("Download Selected");
         downloadBtn.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white;");
 
         Button refreshBtn = new Button("Refresh List");
+        refreshBtn.setStyle("-fx-background-color: #ff9800; -fx-text-fill: white;");
+
         Button deleteBtn = new Button("Delete Selected");
 
         deleteBtn.setStyle("-fx-background-color: #ff4444; -fx-text-fill: white;");
