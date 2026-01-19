@@ -58,7 +58,8 @@ public class Dashboard {
         Button downloadBtn = new Button("Download Selected");
         downloadBtn.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white;");
 
-        Button refreshBtn = new Button("Refresh List");
+        Button refreshBtn = new Button("Reload Files");
+        refreshBtn.setTooltip(new Tooltip("Reload the file list from the database"));
         refreshBtn.setStyle("-fx-background-color: #ff9800; -fx-text-fill: white;");
 
         Button deleteBtn = new Button("Delete Selected");
