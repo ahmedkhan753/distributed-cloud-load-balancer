@@ -50,6 +50,7 @@ public class FileService {
 
                 // 5. Save Stateful Metadata (Req 13)
                 saveDistributedMetadata(file.getName(), fileSizeLabel, username, targetNode1, targetNode2);
+                LocalDatabaseService.logActivity("UPLOAD", file.getName());
 
                 javafx.application.Platform.runLater(() -> {
                     new Alert(Alert.AlertType.INFORMATION, "Upload Successful!\nDistributed to: " + targetNode1 + " & " + targetNode2).show();
@@ -113,6 +114,7 @@ public class FileService {
                 e.printStackTrace();
                 showError("Download Failed: " + e.getMessage());
             }
+
         }).start();
     }
 
