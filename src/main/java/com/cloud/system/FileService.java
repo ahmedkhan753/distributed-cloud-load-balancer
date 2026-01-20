@@ -32,8 +32,8 @@ public class FileService {
                 byte[] enc1 = EncryptionService.encrypt(p1);
                 byte[] enc2 = EncryptionService.encrypt(p2);
 
-                String targetNode1 = loadBalancer.getNextHealthyNode();
-                String targetNode2 = loadBalancer.getNextHealthyNode();
+                String targetNode1 = loadBalancer.getNextNode();
+                String targetNode2 = loadBalancer.getNextNode();
 
                 if (targetNode1 == null || targetNode2 == null) {
                     showError("Critical Error: Not enough healthy storage nodes available!");
