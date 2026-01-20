@@ -27,6 +27,7 @@ public class Dashboard {
     public void show(Stage stage, String username) {
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(25));
+        LoadBalancer lb = new LoadBalancer();
 
         // 1. Top Section
         Label welcomeLabel = new Label("Welcome, " + username + " | Distributed Cloud Dashboard");
@@ -156,9 +157,12 @@ public class Dashboard {
 
 // Link the UI to your Load Balancer
         algoBox.setOnAction(e -> {
-            LoadBalancer.setStrategy(algoBox.getValue());
+            LoadBalancer lb = new LoadBalancer(); // You likely already have this at the top of your class
+            algoBox.setOnAction(e -> {
+                lb.setStrategy(algoBox.getValue()); // Use 'lb' (the object), not 'LoadBalancer' (the class)
+            });
             System.out.println("Strategy changed to: " + algoBox.getValue());
-        });
+        )};
 
 // Add these to your top toolbar or a settings HBox
         HBox settingsBar = new HBox(10, algoLabel, algoBox);
