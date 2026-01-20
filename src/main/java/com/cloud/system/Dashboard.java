@@ -21,14 +21,15 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 public class Dashboard {
-    private FileService fileService = new FileService();
+    private FileService fileService;
     private TableView<FileRecord> table = new TableView<>();
     private ObservableList<FileRecord> fileData = FXCollections.observableArrayList();
 
     public void show(Stage stage, String username) {
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(25));
-        LoadBalancer lb = new LoadBalancer();
+        LoadBalancer sharedLB = new LoadBalancer(); // Create one shared object
+        this.fileService = new FileService(sharedLB);
 
         // 1. Top Section
         Label welcomeLabel = new Label("Welcome, " + username + " | Distributed Cloud Dashboard");
@@ -158,8 +159,7 @@ public class Dashboard {
 
 // 3. The Correct Event Handler
         algoBox.setOnAction(e -> {
-            // Call the method on the object 'lb', NOT the class 'LoadBalancer'
-            lb.setStrategy(algoBox.getValue());
+            sharedLB.setStrategy(algoBox.getValue()); // Now they both use the same object!
             System.out.println("Strategy changed to: " + algoBox.getValue());
         });
 

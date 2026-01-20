@@ -10,7 +10,12 @@ import java.util.Arrays;
 import java.util.Random;
 
 public class FileService {
-    private LoadBalancer loadBalancer = new LoadBalancer();
+    private LoadBalancer loadBalancer;
+
+    // Add this constructor
+    public FileService(LoadBalancer lb) {
+        this.loadBalancer = lb;
+    }
 
     public void uploadFile(File file, String username) {
         new Thread(() -> {
