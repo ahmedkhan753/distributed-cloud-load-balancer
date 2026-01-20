@@ -157,7 +157,6 @@ public class Dashboard {
         algoBox.getItems().addAll(LoadBalancer.Strategy.values());
         algoBox.setValue(LoadBalancer.Strategy.ROUND_ROBIN); // Set default
 
-// 3. The Correct Event Handler
         algoBox.setOnAction(e -> {
             sharedLB.setStrategy(algoBox.getValue()); // Now they both use the same object!
             System.out.println("Strategy changed to: " + algoBox.getValue());
@@ -165,10 +164,8 @@ public class Dashboard {
 
         HBox settingsBar = new HBox(15, algoLabel, algoBox);
         settingsBar.setPadding(new Insets(10));
-        settingsBar.setAlignment(Pos.CENTER_RIGHT); // Puts it on the top right
+        settingsBar.setAlignment(Pos.CENTER_RIGHT);
 
-// 4. CRITICAL: Add it to the main layout
-// Wrap your current top label and this bar together
         VBox topContainer = new VBox(10, welcomeLabel, settingsBar);
         root.setTop(topContainer);
 
@@ -184,8 +181,7 @@ public class Dashboard {
 
     private void refreshTableData() {
         fileData.clear();
-        // Updated Query: Selecting from the metadata table updated for distributed
-        // storage
+
         String sql = "SELECT file_name, file_size, storage_node FROM file_metadata";
 
         try (Connection conn = DatabaseConnection.getConnection();

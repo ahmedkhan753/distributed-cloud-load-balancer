@@ -1,135 +1,62 @@
-This README.md is designed to provide a professional overview of your Systems Software (COMP20081) coursework. It covers the project description, technical architecture, and setup instructions based on the specific requirements of the assignment.
+#  Distributed Cloud Infrastructure
+### Systems Software (COMP20081) Project
 
+ a professional-grade, fault-tolerant cloud storage solution. It demonstrates the coordination between a **Master Node** (Java), a **Central Metadata Ledger** (MySQL), and a **Distributed Storage Cluster** (4x Docker Containers).
 
-Cloud Load Balancer & Distributed Storage System
-Project Overview
-This project is a simulated cloud infrastructure developed for the COMP20081 Systems Software module. It features a functional load balancer that manages network traffic across multiple microservices and file storage containers. The system is built using JavaFX and orchestrated via Docker Compose to ensure scalability, reliability, and data integrity.
+---
 
-Key Features
+## 🏗 System Architecture
 
-Load Balancing & Scheduling: Implements at least three scheduling algorithms (e.g., Round Robin, FCFS, SJN) to distribute requests evenly across servers.
+The project is built on a **Stateful Master-Worker** model to ensure data integrity and high availability:
 
+* **Master Node:** The central "brain" handling user authentication, AES-256 encryption, and file chunking (Req 20).
+* **Local Cache (SQLite):** Acts as the system's "short-term memory." It stores session data and a local activity audit trail, allowing the app to run faster and maintain history even if the server is offline.
+* **Worker Cluster:** Four isolated SFTP environments (Ports 2221–2224) that serve as physical storage nodes managed via Docker.
+* **Load Balancer:** A dynamic router that switches between **Round-Robin**, **Random**, and **Priority** scheduling algorithms based on user choice.
 
 
-Microservices Architecture: Utilizes specialized Docker containers for file partitioning, database management, and storage.
 
+---
 
+## 🚀 Quick Start Guide
 
+### 1. Environment Preparation (PowerShell)
+Before launching the system, create the physical volume mounts on your host machine:
+`mkdir storage1_uploads, storage2_uploads, storage3_uploads, storage4_uploads`
 
-Security: High-level security including AES encryption for file chunks and user passwords, alongside comprehensive Access Control Lists (ACLs).
+### 2. Launch the Infrastructure
+Deploy the storage cluster using Docker Compose:
+`docker-compose up -d`
 
+### 3. Initialize the Databases
+The system requires both a remote persistent store and a local session cache:
+* **MySQL (Remote):** Create a database named `cloud_system` and execute the provided `schema.sql`.
+* **SQLite (Local):** No setup required. The application generates `local_session.db` automatically upon the first login to track activity.
 
-Database Synchronization: Real-time data consistency maintained between a local SQLite database (for sessions) and a remote MySQL database (for user profiles and metadata).
+---
 
+## 🛠 Technical Requirements Met
 
-Terminal Emulation: Integrated shell allowing users to execute standard commands like ls, mv, cp, mkdir, and whoami.
+| Requirement | Implementation Detail |
+| :--- | :--- |
+| **Req 6: Security** | AES-256 Bit Encryption applied to file chunks before transmission. |
+| **Req 7/9: Balancing** | Real-time health checks ensure offline nodes are skipped automatically. |
+| **Req 10: Validation** | Artificial 30-90s latency simulation tests background thread stability. |
+| **Req 19: Terminal** | Integrated `CloudShell` supports `ls`, `pwd`, `whoami`, and `ps`. |
+| **Req 20: Chunking** | Files are bisected into two discrete parts for distributed storage. |
 
 
 
-Real-world Latency Simulation: Introduces artificial delays of 30 to 90 seconds to emulate actual cloud response times.
+---
 
-System Architecture
-The system consists of several orchestrated Docker containers:
+## 💻 Cloud Terminal Commands
+Use the **Cloud Terminal** tab to interact with the system via CLI:
+* `ls` - Queries the central MySQL ledger for all distributed files.
+* `whoami` - Identifies the active user stored in the local SQLite session.
+* `status` - Displays the health and current balancing algorithm of the 4 nodes.
 
+---
 
-
-Main Container: Hosts the JavaFX GUI and local SQLite database.
-
-
-
-Load Balancer: Manages traffic distribution and resource scaling.
-
-
-
-File Partitioning & Aggregator: Handles file chunking, AES encryption/decryption, and CRC32 validation.
-
-
-
-MySQL Database: Centralized storage for user profiles and system logs.
-
-
-
-File Storage Containers: Two or more containers dedicated to storing encrypted file chunks.
-
-
-
-
-Host Manager: A support container for managing the Docker environment
-
-Technical Stack
-
-Language: Java (JDK 20+).
-
-
-Build Tool: Maven.
-
-
-
-UI Framework: JavaFX with Scene Builder.
-
-
-Containerization: Docker & Docker Compose.
-
-
-
-Database: SQLite (Local) and MySQL (Remote).
-
-
-Communication Protocols: MQTT, OpenSSH, and TCP .
-
-Getting Started
-Prerequisites
-
-NetBeans IDE (Mandatory for compilation).
-
-
-Docker Desktop and Docker Compose.
-
-
-Java 20 or higher.
-
-Installation & Setup
-Clone the Repository:
-
-Bash
-
-git clone https://olympus.ntu.ac.uk/[your-private-repo-link]
-
-Environment Setup: Ensure you are using the mandatory module Docker image: pedrombmachado/ntu_lubuntu:comp20081.
-
-Build the Project: Open the project in NetBeans and build using Maven to generate the executable .jar file.
-
-
-Launch Infrastructure: In the terminal, navigate to the project root and run:
-
-Bash
-
-docker-compose up --build
-Usage
-Upon launching the JavaFX portal, users can:
-
-
-Login/Authenticate: Access standard or admin dashboards.
-
-
-Manage Files: Upload, download, share, and delete files with specific read/write permissions.
-
-
-
-Terminal Interface: Use the built-in shell to navigate the simulated directory structure.
-
-
-Monitor Performance: View performance metrics and logs for the load balancer and file servers.
-
-Academic Integrity
-This project was developed strictly adhering to the NTU COMP20081 coursework specifications. All code is original, and the use of Generative AI has been limited to authorized spelling and grammar checks as per the "Traffic Light System" (Green) .
-
-
-Author
-Student Name: [Your Name]
-
-
-Module: COMP20081 - Systems Software 
-
-
-Institution: Nottingham Trent University
+## ⚖️ Troubleshooting
+* **Dependency Issues:** Ensure `sqlite-jdbc` is set to version `3.45.1.0` in your `pom.xml` and click the **Maven Reload** button in IntelliJ.
+* **SQL Errors:** Ensure the `users` table is populated before attempting to upload files, as the system links metadata to user IDs.
