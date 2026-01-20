@@ -4,6 +4,7 @@ import javafx.animation.PauseTransition;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -153,20 +154,19 @@ public class Dashboard {
         Label algoLabel = new Label("Load Balancer Strategy:");
         ComboBox<LoadBalancer.Strategy> algoBox = new ComboBox<>();
         algoBox.getItems().addAll(LoadBalancer.Strategy.values());
-        algoBox.setValue(LoadBalancer.Strategy.ROUND_ROBIN); // Default
+        algoBox.setValue(LoadBalancer.Strategy.ROUND_ROBIN); // Set default
 
-// Link the UI to your Load Balancer
+// 3. The Correct Event Handler
         algoBox.setOnAction(e -> {
-            LoadBalancer lb = new LoadBalancer(); // You likely already have this at the top of your class
-            algoBox.setOnAction(e -> {
-                lb.setStrategy(algoBox.getValue()); // Use 'lb' (the object), not 'LoadBalancer' (the class)
-            });
+            // Call the method on the object 'lb', NOT the class 'LoadBalancer'
+            lb.setStrategy(algoBox.getValue());
             System.out.println("Strategy changed to: " + algoBox.getValue());
-        )};
+        });
 
-// Add these to your top toolbar or a settings HBox
+// 4. Add to your layout
         HBox settingsBar = new HBox(10, algoLabel, algoBox);
-        root.setTop(settingsBar);
+        settingsBar.setAlignment(Pos.CENTER_LEFT);
+// Add settingsBar to your main root layout (e.g., root.setTop(settingsBar))
 
         // Logic to handle terminal commands
         TerminalService terminalService = new TerminalService(username);
