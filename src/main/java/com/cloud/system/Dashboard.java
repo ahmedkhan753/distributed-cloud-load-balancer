@@ -163,10 +163,14 @@ public class Dashboard {
             System.out.println("Strategy changed to: " + algoBox.getValue());
         });
 
-// 4. Add to your layout
-        HBox settingsBar = new HBox(10, algoLabel, algoBox);
-        settingsBar.setAlignment(Pos.CENTER_LEFT);
-// Add settingsBar to your main root layout (e.g., root.setTop(settingsBar))
+        HBox settingsBar = new HBox(15, algoLabel, algoBox);
+        settingsBar.setPadding(new Insets(10));
+        settingsBar.setAlignment(Pos.CENTER_RIGHT); // Puts it on the top right
+
+// 4. CRITICAL: Add it to the main layout
+// Wrap your current top label and this bar together
+        VBox topContainer = new VBox(10, welcomeLabel, settingsBar);
+        root.setTop(topContainer);
 
         // Logic to handle terminal commands
         TerminalService terminalService = new TerminalService(username);
