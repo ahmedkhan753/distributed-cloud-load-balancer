@@ -148,6 +148,22 @@ public class Dashboard {
         tabPane.getTabs().addAll(dashboardTab, terminalTab);
         root.setCenter(tabPane);
 
+        // Create the UI elements
+        Label algoLabel = new Label("Load Balancer Strategy:");
+        ComboBox<LoadBalancer.Strategy> algoBox = new ComboBox<>();
+        algoBox.getItems().addAll(LoadBalancer.Strategy.values());
+        algoBox.setValue(LoadBalancer.Strategy.ROUND_ROBIN); // Default
+
+// Link the UI to your Load Balancer
+        algoBox.setOnAction(e -> {
+            LoadBalancer.setStrategy(algoBox.getValue());
+            System.out.println("Strategy changed to: " + algoBox.getValue());
+        });
+
+// Add these to your top toolbar or a settings HBox
+        HBox settingsBar = new HBox(10, algoLabel, algoBox);
+        root.setTop(settingsBar);
+
         // Logic to handle terminal commands
         TerminalService terminalService = new TerminalService(username);
         terminalInput.setOnAction(e -> {
