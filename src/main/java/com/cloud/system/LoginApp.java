@@ -37,7 +37,7 @@ public class LoginApp extends Application {
             if (userDAO.validateLogin(user, pass)) {
                 statusLabel.setStyle("-fx-text-fill: green;");
                 statusLabel.setText("Login Successful! Welcome " + user);
-
+                LocalDatabaseService.saveSession(user);
                 Dashboard dashboard = new Dashboard();
                 dashboard.show(primaryStage, user);
             } else {
