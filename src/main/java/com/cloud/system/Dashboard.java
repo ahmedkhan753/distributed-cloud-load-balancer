@@ -28,15 +28,36 @@ public class Dashboard {
     public void show(Stage stage, String username) {
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(25));
-        LoadBalancer sharedLB = new LoadBalancer(); // Create one shared object
-        this.fileService = new FileService(sharedLB);
 
-        // 1. Top Section
+        // 0. Initialize Shared Services
+        LoadBalancer sharedLB = new LoadBalancer();
+        this.fileService = new FileService(sharedLB); // Shared LB ensures UI and Logic sync
+
+        // 1. Top Section: Welcome Label & Algorithm Switcher
         Label welcomeLabel = new Label("Welcome, " + username + " | Distributed Cloud Dashboard");
         welcomeLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
-        root.setTop(welcomeLabel);
 
-        // 2. Table Configuration
+        Label algoLabel = new Label("Load Balancer Strategy:");
+        ComboBox<LoadBalancer.Strategy> algoBox = new ComboBox<>();
+        algoBox.getItems().addAll(LoadBalancer.Strategy.values());
+        algoBox.setValue(LoadBalancer.Strategy.ROUND_ROBIN);
+
+        algoBox.setOnAction(e -> {
+            sharedLB.setStrategy(algoBox.getValue());
+            System.out.println("Strategy changed to: " + algoBox.getValue());
+        });
+
+        HBox settingsBar = new HBox(15, algoLabel, algoBox);
+        settingsBar.setAlignment(Pos.CENTER_RIGHT);
+
+        VBox topContainer = new VBox(10, welcomeLabel, settingsBar);
+        topContainer.setPadding(new Insets(0, 0, 15, 0));
+        root.setTop(topContainer);
+
+        // 2. Center Section: TabPane (File Manager & Terminal)
+        TabPane tabPane = new TabPane();
+
+        // --- File Manager Tab ---
         TableColumn<FileRecord, String> nameCol = new TableColumn<>("File Name");
         nameCol.setCellValueFactory(new PropertyValueFactory<>("fileName"));
         nameCol.setMinWidth(260);
@@ -49,96 +70,18 @@ public class Dashboard {
         nodeCol.setCellValueFactory(new PropertyValueFactory<>("storageNode"));
         nodeCol.setMinWidth(150);
 
-        table.getColumns().addAll(nameCol, sizeCol, nodeCol);
+        table.getColumns().setAll(nameCol, sizeCol, nodeCol);
         table.setItems(fileData);
-        root.setCenter(table);
 
-        // 3. Action Buttons
-        Button uploadBtn = new Button("Upload New File");
-        uploadBtn.setTooltip(new Tooltip("Click to select and upload a file"));
-        uploadBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
-
-        Button downloadBtn = new Button("Download Selected");
-        downloadBtn.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white;");
-
-        Button refreshBtn = new Button("Reload Files");
-        refreshBtn.setTooltip(new Tooltip("Reload the file list from the database"));
-        refreshBtn.setStyle("-fx-background-color: #ff9800; -fx-text-fill: white;");
-
-        Button deleteBtn = new Button("Delete Selected");
-
-        deleteBtn.setStyle("-fx-background-color: #ff4444; -fx-text-fill: white;");
-
-        HBox controls = new HBox(10, uploadBtn, downloadBtn, deleteBtn, refreshBtn);
-        controls.setPadding(new Insets(10, 0, 0, 0));
-        root.setBottom(controls);
-
-        // --- BUTTON LOGIC ---
-
-        // UPLOAD (Now splits and encrypts)
-        uploadBtn.setOnAction(e -> {
-            FileChooser fileChooser = new FileChooser();
-            File selectedFile = fileChooser.showOpenDialog(stage);
-            if (selectedFile != null) {
-                fileService.uploadFile(selectedFile, username);
-                // Auto-refresh after a small delay to allow SFTP and SQL to finish
-                PauseTransition pause = new PauseTransition(Duration.seconds(2));
-                pause.setOnFinished(ev -> refreshTableData());
-                pause.play();
-            }
-        });
-
-        // DOWNLOAD (Now reassembles and decrypts)
-        downloadBtn.setOnAction(e -> {
-            FileRecord selectedFile = table.getSelectionModel().getSelectedItem();
-            if (selectedFile != null) {
-                FileChooser fileSaver = new FileChooser();
-                fileSaver.setInitialFileName(selectedFile.getFileName());
-                File destination = fileSaver.showSaveDialog(stage);
-
-                if (destination != null) {
-                    // FIXED: Using the new reassemble method
-                    fileService.downloadAndReassemble(selectedFile.getFileName(), destination);
-                }
-            } else {
-                new Alert(Alert.AlertType.WARNING, "Please select a file first!").show();
-            }
-        });
-
-        // DELETE (Now cleans up both storage nodes)
-        deleteBtn.setOnAction(e -> {
-            FileRecord selected = table.getSelectionModel().getSelectedItem();
-            if (selected != null) {
-                // FIXED: Using the new distributed delete method
-                fileService.deleteDistributedFile(selected.getFileName());
-
-                PauseTransition pause = new PauseTransition(Duration.seconds(1));
-                pause.setOnFinished(ev -> refreshTableData());
-                pause.play();
-            }
-        });
-
-        refreshBtn.setOnAction(e -> refreshTableData());
-        refreshTableData();
-
-        Scene scene = new Scene(root, 700, 450);
-        stage.setTitle("Cloud System Dashboard");
-        stage.setScene(scene);
-        stage.show();
-
-        // Inside Dashboard.java show() method:
-
-        TabPane tabPane = new TabPane();
-        Tab dashboardTab = new Tab("File Manager", root.getCenter());
+        Tab dashboardTab = new Tab("File Manager", table);
         dashboardTab.setClosable(false);
 
-        // Create the Terminal Tab
+        // --- Cloud Terminal Tab ---
         VBox terminalBox = new VBox(10);
         terminalBox.setPadding(new Insets(10));
         TextArea terminalOutput = new TextArea("Welcome to CloudShell v1.0\nType 'help' for commands...\n\n$ ");
         terminalOutput.setEditable(false);
-        terminalOutput
-                .setStyle("-fx-control-inner-background: black; -fx-text-fill: lime; -fx-font-family: 'Courier New';");
+        terminalOutput.setStyle("-fx-control-inner-background: black; -fx-text-fill: lime; -fx-font-family: 'Courier New';");
         terminalOutput.setPrefHeight(300);
 
         TextField terminalInput = new TextField();
@@ -151,25 +94,80 @@ public class Dashboard {
         tabPane.getTabs().addAll(dashboardTab, terminalTab);
         root.setCenter(tabPane);
 
-        // Create the UI elements
-        Label algoLabel = new Label("Load Balancer Strategy:");
-        ComboBox<LoadBalancer.Strategy> algoBox = new ComboBox<>();
-        algoBox.getItems().addAll(LoadBalancer.Strategy.values());
-        algoBox.setValue(LoadBalancer.Strategy.ROUND_ROBIN); // Set default
+        // 3. Bottom Section: Action Buttons
+        Button uploadBtn = new Button("Upload New File");
+        uploadBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
 
-        algoBox.setOnAction(e -> {
-            sharedLB.setStrategy(algoBox.getValue()); // Now they both use the same object!
-            System.out.println("Strategy changed to: " + algoBox.getValue());
+        Button downloadBtn = new Button("Download Selected");
+        downloadBtn.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white;");
+
+        Button deleteBtn = new Button("Delete Selected");
+        deleteBtn.setStyle("-fx-background-color: #ff4444; -fx-text-fill: white;");
+
+        Button refreshBtn = new Button("Reload Files");
+        refreshBtn.setStyle("-fx-background-color: #ff9800; -fx-text-fill: white;");
+
+        Button logoutBtn = new Button("Logout");
+        logoutBtn.setStyle("-fx-background-color: #757575; -fx-text-fill: white;");
+
+        HBox controls = new HBox(10, uploadBtn, downloadBtn, deleteBtn, refreshBtn, logoutBtn);
+        controls.setPadding(new Insets(15, 0, 0, 0));
+        controls.setAlignment(Pos.CENTER);
+        root.setBottom(controls);
+
+        // --- BUTTON LOGIC ---
+
+        uploadBtn.setOnAction(e -> {
+            FileChooser fileChooser = new FileChooser();
+            File selectedFile = fileChooser.showOpenDialog(stage);
+            if (selectedFile != null) {
+                fileService.uploadFile(selectedFile, username);
+                PauseTransition pause = new PauseTransition(Duration.seconds(2));
+                pause.setOnFinished(ev -> refreshTableData());
+                pause.play();
+            }
         });
 
-        HBox settingsBar = new HBox(15, algoLabel, algoBox);
-        settingsBar.setPadding(new Insets(10));
-        settingsBar.setAlignment(Pos.CENTER_RIGHT);
+        downloadBtn.setOnAction(e -> {
+            FileRecord selectedFile = table.getSelectionModel().getSelectedItem();
+            if (selectedFile != null) {
+                FileChooser fileSaver = new FileChooser();
+                fileSaver.setInitialFileName(selectedFile.getFileName());
+                File destination = fileSaver.showSaveDialog(stage);
+                if (destination != null) {
+                    fileService.downloadAndReassemble(selectedFile.getFileName(), destination);
+                }
+            } else {
+                new Alert(Alert.AlertType.WARNING, "Please select a file first!").show();
+            }
+        });
 
-        VBox topContainer = new VBox(10, welcomeLabel, settingsBar);
-        root.setTop(topContainer);
+        deleteBtn.setOnAction(e -> {
+            FileRecord selected = table.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                fileService.deleteDistributedFile(selected.getFileName());
+                PauseTransition pause = new PauseTransition(Duration.seconds(1));
+                pause.setOnFinished(ev -> refreshTableData());
+                pause.play();
+            }
+        });
 
-        // Logic to handle terminal commands
+        refreshBtn.setOnAction(e -> refreshTableData());
+
+        logoutBtn.setOnAction(e -> {
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Log out of session?", ButtonType.YES, ButtonType.NO);
+            alert.showAndWait().ifPresent(response -> {
+                if (response == ButtonType.YES) {
+                    LocalDatabaseService.clearSession(); // Clear SQLite cache
+                    LocalDatabaseService.logActivity("LOGOUT", "Session ended for: " + username);
+                    try {
+                        new LoginApp().start(stage); // Return to login screen
+                    } catch (Exception ex) { ex.printStackTrace(); }
+                }
+            });
+        });
+
+        // Terminal Logic
         TerminalService terminalService = new TerminalService(username);
         terminalInput.setOnAction(e -> {
             String cmd = terminalInput.getText();
@@ -178,22 +176,12 @@ public class Dashboard {
             terminalInput.clear();
         });
 
-        Button logoutBtn = new Button("Logout");
-        logoutBtn.setStyle("-fx-background-color: #757575; -fx-text-fill: white;");
-
-        logoutBtn.setOnAction(e -> {
-            // Clear the local SQLite session
-            LocalDatabaseService.clearSession();
-            LocalDatabaseService.logActivity("LOGOUT", "User Session Ended");
-
-            // Return to the Login Screen
-            LoginApp loginApp = new LoginApp();
-            try {
-                loginApp.start(stage);
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-        });
+        // Final Display
+        refreshTableData();
+        Scene scene = new Scene(root, 800, 550);
+        stage.setTitle("NebulaStore Dashboard | " + username);
+        stage.setScene(scene);
+        stage.show();
     }
 
     private void refreshTableData() {
