@@ -180,6 +180,20 @@ public class Dashboard {
 
         Button logoutBtn = new Button("Logout");
         logoutBtn.setStyle("-fx-background-color: #757575; -fx-text-fill: white;");
+
+        logoutBtn.setOnAction(e -> {
+            // Clear the local SQLite session
+            LocalDatabaseService.clearSession();
+            LocalDatabaseService.logActivity("LOGOUT", "User Session Ended");
+
+            // Return to the Login Screen
+            LoginApp loginApp = new LoginApp();
+            try {
+                loginApp.start(stage);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
     }
 
     private void refreshTableData() {
