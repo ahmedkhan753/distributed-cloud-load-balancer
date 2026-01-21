@@ -31,4 +31,12 @@ public class LocalDatabaseService {
             pstmt.executeUpdate();
         } catch (SQLException e) { e.printStackTrace(); }
     }
+    public static void clearSession() {
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:local_session.db")) {
+            Statement stmt = conn.createStatement();
+            // We delete the session so the next person has to log in via MySQL
+            stmt.execute("DELETE FROM session");
+            System.out.println("Local session cleared.");
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
 }
