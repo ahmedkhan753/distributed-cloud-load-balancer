@@ -177,6 +177,9 @@ public class Dashboard {
             terminalOutput.appendText(cmd + "\n" + result + "\n$ ");
             terminalInput.clear();
         });
+
+        Button logoutBtn = new Button("Logout");
+        logoutBtn.setStyle("-fx-background-color: #757575; -fx-text-fill: white;");
     }
 
     private void refreshTableData() {
