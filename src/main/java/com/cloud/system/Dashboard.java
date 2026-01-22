@@ -168,6 +168,10 @@ public class Dashboard {
             });
         });
 
+        algoBox.setTooltip(new Tooltip("Select the algorithm to distribute chunks across the cluster")); //
+        downloadBtn.setTooltip(new Tooltip("Reassemble and decrypt the selected file"));
+        deleteBtn.setTooltip(new Tooltip("Permanently remove file parts from all storage nodes"));
+
         // Terminal Logic
         TerminalService terminalService = new TerminalService(username);
         terminalInput.setOnAction(e -> {
