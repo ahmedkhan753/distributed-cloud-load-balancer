@@ -38,6 +38,11 @@ public class TerminalService {
             case "ps":
                 return "PID TTY          TIME CMD\n 101 tty1     00:00:01 java\n 102 tty1     00:00:00 mysql-client";
 
+            case "status":
+                return "Nodes Online: 4 | Strategy: " + currentStrategy + " | Encryption: AES-256"; //
+            case "clear":
+                return "TERMINAL_CLEAR_SIGNAL";
+
             default:
                 return "Command not found: " + command;
         }
