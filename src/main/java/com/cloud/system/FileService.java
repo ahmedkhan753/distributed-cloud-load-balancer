@@ -48,6 +48,9 @@ public class FileService {
                 int port1 = getPortForNode(targetNode1);
                 int port2 = getPortForNode(targetNode2);
 
+                System.out.println("[LoadBalancer] Picked " + targetNode1 + " for Chunk 1"); //
+                System.out.println("[LoadBalancer] Picked " + targetNode2 + " for Chunk 2");
+                System.out.println("[Security] Encrypting parts with AES-256..."); //
 
                 // 4. Physical Upload
                 uploadChunkToSftp("localhost", port1, file.getName() + ".part1", enc1);
