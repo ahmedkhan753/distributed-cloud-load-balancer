@@ -155,13 +155,14 @@ public class Dashboard {
         refreshBtn.setOnAction(e -> refreshTableData());
 
         logoutBtn.setOnAction(e -> {
-            Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Log out of session?", ButtonType.YES, ButtonType.NO);
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to end your session?", ButtonType.YES, ButtonType.NO);
+            alert.setHeaderText("Confirm Logout");
             alert.showAndWait().ifPresent(response -> {
                 if (response == ButtonType.YES) {
-                    LocalDatabaseService.clearSession(); // Clear SQLite cache
-                    LocalDatabaseService.logActivity("LOGOUT", "Session ended for: " + username);
+                    LocalDatabaseService.clearSession(); //
+                    LocalDatabaseService.logActivity("LOGOUT", "User Session Ended");
                     try {
-                        new LoginApp().start(stage); // Return to login screen
+                        new LoginApp().start(stage);
                     } catch (Exception ex) { ex.printStackTrace(); }
                 }
             });
