@@ -172,6 +172,12 @@ public class Dashboard {
         downloadBtn.setTooltip(new Tooltip("Reassemble and decrypt the selected file"));
         deleteBtn.setTooltip(new Tooltip("Permanently remove file parts from all storage nodes"));
 
+        Label sessionLabel = new Label("Logged in as: " + username + " (Local Session Active)");
+        sessionLabel.setStyle("-fx-font-size: 10px; -fx-text-fill: gray;");
+        HBox bottomBox = new HBox(20, controls, sessionLabel); // Replace your root.setBottom(controls)
+        bottomBox.setAlignment(Pos.CENTER);
+        root.setBottom(bottomBox);
+
         // Terminal Logic
         TerminalService terminalService = new TerminalService(username);
         terminalInput.setOnAction(e -> {
